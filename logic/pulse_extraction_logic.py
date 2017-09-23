@@ -40,7 +40,7 @@ class PulseExtractionLogic(GenericLogic):
     count_treshold = StatusVar(default=10)
     threshold_tolerance_bins = StatusVar(default=20)
     min_laser_length = StatusVar(default=200)
-    #self.number_of_lasers = StatusVar(default=50)
+    laser_length = StatusVar(default=3000)
     current_method = StatusVar(default='conv_deriv')
 
     def __init__(self, config, **kwargs):

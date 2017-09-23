@@ -85,7 +85,7 @@ class PulsedMeasurementLogic(GenericLogic):
     sigTimerIntervalUpdated = QtCore.Signal(float)
     sigAnalysisSettingsUpdated = QtCore.Signal(str, int, int, int, int)
     sigAnalysisMethodsUpdated = QtCore.Signal(dict)
-    sigExtractionSettingsUpdated = QtCore.Signal(str, float, int, int, int)
+    sigExtractionSettingsUpdated = QtCore.Signal(str, float, int, int, int, int)
     sigExtractionMethodsUpdated = QtCore.Signal(dict)
 
     def __init__(self, config, **kwargs):
@@ -261,7 +261,8 @@ class PulsedMeasurementLogic(GenericLogic):
                                                self._pulse_extraction_logic.conv_std_dev,
                                                self._pulse_extraction_logic.count_treshold,
                                                self._pulse_extraction_logic.threshold_tolerance_bins,
-                                               self._pulse_extraction_logic.min_laser_length)
+                                               self._pulse_extraction_logic.min_laser_length,
+                                               self._pulse_extraction_logic.laser_length)
         self.sigLoadedAssetUpdated.emit(self.loaded_asset_name)
         self.sigUploadedAssetsUpdated.emit(self._pulse_generator_device.get_uploaded_asset_names())
         self.sigSignalDataUpdated.emit(self.signal_plot_x, self.signal_plot_y, self.signal_plot_y2,
@@ -930,7 +931,7 @@ class PulsedMeasurementLogic(GenericLogic):
         return method, signal_start_bin, signal_end_bin, norm_start_bin, norm_end_bin
 
     def extraction_settings_changed(self, method, conv_std_dev, count_treshold,
-                                    threshold_tolerance_bins, min_laser_length):
+                                    threshold_tolerance_bins, min_laser_length, laser_length):
         """
 
         @param method:
@@ -946,9 +947,11 @@ class PulsedMeasurementLogic(GenericLogic):
             self._pulse_extraction_logic.count_treshold = count_treshold
             self._pulse_extraction_logic.threshold_tolerance_bins = threshold_tolerance_bins
             self._pulse_extraction_logic.min_laser_length = min_laser_length
+            self._pulse_extraction_logic.laser_length = laser_length
             self.sigExtractionSettingsUpdated.emit(method, conv_std_dev, count_treshold,
-                                                   threshold_tolerance_bins, min_laser_length)
-        return method, conv_std_dev, count_treshold, threshold_tolerance_bins, min_laser_length
+                                                   threshold_tolerance_bins, min_laser_length,
+                                                   laser_length)
+        return method, conv_std_dev, count_treshold, threshold_tolerance_bins, min_laser_length, laser_length
 
     def _initialize_plots(self):
         """

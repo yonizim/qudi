@@ -71,7 +71,7 @@ class PulsedMasterLogic(GenericLogic):
     sigAnalysisSettingsChanged = QtCore.Signal(str, int, int, int, int)
     sigManuallyPullData = QtCore.Signal()
     sigRequestMeasurementInitValues = QtCore.Signal()
-    sigExtractionSettingsChanged = QtCore.Signal(str, float, int, int, int)
+    sigExtractionSettingsChanged = QtCore.Signal(str, float, int, int, int, int)
 
     # sequence_generator_logic signals
     sigSavePulseBlock = QtCore.Signal(str, object)
@@ -120,7 +120,7 @@ class PulsedMasterLogic(GenericLogic):
     sigTimerIntervalUpdated = QtCore.Signal(float)
     sigAnalysisSettingsUpdated = QtCore.Signal(str, int, int, int, int)
     sigAnalysisMethodsUpdated = QtCore.Signal(dict)
-    sigExtractionSettingsUpdated = QtCore.Signal(str, float, int, int, int)
+    sigExtractionSettingsUpdated = QtCore.Signal(str, float, int, int, int, int)
     sigExtractionMethodsUpdated = QtCore.Signal(dict)
 
     def __init__(self, config, **kwargs):
@@ -890,7 +890,7 @@ class PulsedMasterLogic(GenericLogic):
         return
 
     def extraction_settings_changed(self, method, conv_std_dev, count_treshold,
-                                    threshold_tolerance_bins, min_laser_length):
+                                    threshold_tolerance_bins, min_laser_length, laser_length):
         """
 
         @param method:
@@ -901,11 +901,12 @@ class PulsedMasterLogic(GenericLogic):
         @return:
         """
         self.sigExtractionSettingsChanged.emit(method, conv_std_dev, count_treshold,
-                                               threshold_tolerance_bins, min_laser_length)
+                                               threshold_tolerance_bins, min_laser_length,
+                                               laser_length)
         return
 
     def extraction_settings_updated(self, method, conv_std_dev, count_treshold,
-                                    threshold_tolerance_bins, min_laser_length):
+                                    threshold_tolerance_bins, min_laser_length, laser_length):
         """
 
         @param method:
@@ -916,7 +917,8 @@ class PulsedMasterLogic(GenericLogic):
         @return:
         """
         self.sigExtractionSettingsUpdated.emit(method, conv_std_dev, count_treshold,
-                                               threshold_tolerance_bins, min_laser_length)
+                                               threshold_tolerance_bins, min_laser_length,
+                                               laser_length)
         return
 
     def extraction_methods_updated(self, methods_dict):

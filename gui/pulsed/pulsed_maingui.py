@@ -1339,6 +1339,7 @@ class PulsedMeasurementGui(GUIBase):
         self._pa.ext_control_mw_freq_DoubleSpinBox.setRange(0, 1.0e99)
         self._pa.ext_control_mw_power_DoubleSpinBox.setRange(0, 1.0e99)
         self._pe.extract_param_threshold_SpinBox.setRange(1, 2**31-1)
+        self._pe.extract_param_laserlength_SpinBox.setRange(1, 2**31-1)
 
         # ---------------------------------------------------------------------
         #                         Connect signals
@@ -1404,6 +1405,7 @@ class PulsedMeasurementGui(GUIBase):
         self._pe.extract_param_ref_window_width_SpinBox.editingFinished.connect(self.analysis_settings_changed)
         self._pe.extract_param_conv_std_dev_DSpinBox.editingFinished.connect(self.extraction_settings_changed)
         self._pe.extract_param_threshold_SpinBox.editingFinished.connect(self.extraction_settings_changed)
+        self._pe.extract_param_laserlength_SpinBox.editingFinished.connect(self.extraction_settings_changed)
         self._pe.extract_param_min_laser_length_SpinBox.editingFinished.connect(self.extraction_settings_changed)
         self._pe.extract_param_tolerance_SpinBox.editingFinished.connect(self.extraction_settings_changed)
 
@@ -1493,6 +1495,7 @@ class PulsedMeasurementGui(GUIBase):
         self._pe.extract_param_ref_window_width_SpinBox.editingFinished.disconnect()
         self._pe.extract_param_conv_std_dev_DSpinBox.editingFinished.disconnect()
         self._pe.extract_param_threshold_SpinBox.editingFinished.disconnect()
+        self._pe.extract_param_laserlength_SpinBox.editingFinished.disconnect()
         self._pe.extract_param_min_laser_length_SpinBox.editingFinished.disconnect()
         self._pe.extract_param_tolerance_SpinBox.editingFinished.disconnect()
         self._pa.ana_param_fc_bins_ComboBox.currentIndexChanged.disconnect()
@@ -2082,14 +2085,15 @@ class PulsedMeasurementGui(GUIBase):
         count_treshold = self._pe.extract_param_threshold_SpinBox.value()
         threshold_tolerance_bins = self._pe.extract_param_tolerance_SpinBox.value()
         min_laser_length = self._pe.extract_param_min_laser_length_SpinBox.value()
+        laser_length = self._pe.extract_param_laserlength_SpinBox.value()
 
         self._pulsed_master_logic.extraction_settings_changed(method, conv_std_dev, count_treshold,
                                                               threshold_tolerance_bins,
-                                                              min_laser_length)
+                                                              min_laser_length, laser_length)
         return
 
     def extraction_settings_updated(self, method, conv_std_dev, count_treshold,
-                                    threshold_tolerance_bins, min_laser_length):
+                                    threshold_tolerance_bins, min_laser_length, laser_length):
         """
 
         @param method:
@@ -2104,6 +2108,7 @@ class PulsedMeasurementGui(GUIBase):
         self._pe.extract_param_conv_std_dev_DSpinBox.blockSignals(True)
         self._pe.extract_param_extraction_method_comboBox.blockSignals(True)
         self._pe.extract_param_threshold_SpinBox.blockSignals(True)
+        self._pe.extract_param_laserlength_SpinBox.blockSignals(True)
         self._pe.extract_param_tolerance_SpinBox.blockSignals(True)
         self._pe.extract_param_min_laser_length_SpinBox.blockSignals(True)
         # set widgets
@@ -2112,6 +2117,7 @@ class PulsedMeasurementGui(GUIBase):
         self._pe.extract_param_conv_std_dev_DSpinBox.setValue(conv_std_dev)
         self._pe.extract_param_conv_std_dev_slider.setValue(conv_std_dev)
         self._pe.extract_param_threshold_SpinBox.setValue(count_treshold)
+        self._pe.extract_param_laserlength_SpinBox.setValue(laser_length)
         self._pe.extract_param_tolerance_SpinBox.setValue(threshold_tolerance_bins)
         self._pe.extract_param_min_laser_length_SpinBox.setValue(min_laser_length)
         # unblock signals
@@ -2119,6 +2125,7 @@ class PulsedMeasurementGui(GUIBase):
         self._pe.extract_param_conv_std_dev_DSpinBox.blockSignals(False)
         self._pe.extract_param_extraction_method_comboBox.blockSignals(False)
         self._pe.extract_param_threshold_SpinBox.blockSignals(False)
+        self._pe.extract_param_laserlength_SpinBox.blockSignals(False)
         self._pe.extract_param_tolerance_SpinBox.blockSignals(False)
         self._pe.extract_param_min_laser_length_SpinBox.blockSignals(False)
         return

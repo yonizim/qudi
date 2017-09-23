@@ -208,6 +208,49 @@ def ungated_conv_deriv(self, count_data):
     return return_dict
 
 
+def gated_window_conv(self, count_data):
+    """
+    Detects the rising flank in the gated timetrace data and extracts just the laser pulses.
+    Convolves a rectangle window with the count data.
+
+    @param numpy.ndarray count_data:    2D array, the raw timetrace data from a gated fast counter,
+                                        dimensions: 0: gate number, 1: time bin
+
+    @return dict:   The extracted laser pulses of the timetrace as well as the indices for rising
+                    and falling flanks.
+    """
+    # sum up all gated timetraces to ease flank detection
+    timetrace_sum = np.sum(count_data, 0)
+
+    # Create window for convolution
+    window = np.zeros(timetrace_sum.size)
+    window[window.size//2-self.laser_length//2:window.size//2+self.laser_length//2] = 1
+
+    # Convolve sum of count data with window to find the middle of the laser pulse
+    convolution = np.convolve(timetrace_sum, window, mode='same')
+
+    # get indices of rising and falling flank
+    rising_ind = convolution.argmax() - self.laser_length//2
+    falling_ind = convolution.argmax() + self.laser_length//2
+
+    # If convolution failed, the returned array only contains zeros.
+    # Check for that and return also only zeros to indicate a failed pulse extraction.
+    if len(convolution.nonzero()[0]) == 0:
+        laser_arr = np.zeros(count_data.shape, dtype=int)
+    else:
+        # slice the data array to cut off anything but laser pulses
+        laser_arr = count_data[:, rising_ind:falling_ind]
+
+    # Create return dictionary
+    return_dict = dict()
+
+    return_dict['laser_counts_arr'] = laser_arr.astype(int)
+    return_dict['laser_indices_rising'] = rising_ind
+    return_dict['laser_indices_falling'] = falling_ind
+
+    return return_dict
+
+
 def ungated_threshold(self, count_data):
     """
     Detects the laser pulses in the ungated timetrace data and extracts them.
