@@ -72,6 +72,7 @@ class PulsedMasterLogic(GenericLogic):
     sigManuallyPullData = QtCore.Signal()
     sigRequestMeasurementInitValues = QtCore.Signal()
     sigExtractionSettingsChanged = QtCore.Signal(dict)
+    sigEnsembleSettingsUpdated = QtCore.Signal(object)
 
     # sequence_generator_logic signals
     sigSavePulseBlock = QtCore.Signal(str, object)
@@ -181,7 +182,8 @@ class PulsedMasterLogic(GenericLogic):
                                            QtCore.Qt.QueuedConnection)
         self.sigExtractionSettingsChanged.connect(self._measurement_logic.extraction_settings_changed,
                                                   QtCore.Qt.QueuedConnection)
-
+        self.sigEnsembleSettingsUpdated.connect(self._measurement_logic.ensemble_settings_updated,
+                                                  QtCore.Qt.QueuedConnection)
         # Signals controlling the sequence_generator_logic
         self.sigRequestGeneratorInitValues.connect(self._generator_logic.request_init_values,
                                                    QtCore.Qt.QueuedConnection)
@@ -250,7 +252,8 @@ class PulsedMasterLogic(GenericLogic):
                                                                      QtCore.Qt.QueuedConnection)
         self._measurement_logic.sigExtractionMethodsUpdated.connect(self.extraction_methods_updated,
                                                                     QtCore.Qt.QueuedConnection)
-
+        self._measurement_logic.sigEnsembleSettingsUpdate.connect(self.ensemble_settings_update,
+                                                                     QtCore.Qt.QueuedConnection)
         # connect signals coming from the sequence_generator_logic
         self._generator_logic.sigBlockDictUpdated.connect(self.saved_pulse_blocks_updated,
                                                           QtCore.Qt.QueuedConnection)
@@ -318,6 +321,7 @@ class PulsedMasterLogic(GenericLogic):
         self.sigDirectWriteSequence.disconnect()
         self.sigLaserToShowChanged.disconnect()
         self.sigExtractionSettingsChanged.disconnect()
+        self.sigEnsembleSettingsUpdated.disconnect
         # Signals controlling the sequence_generator_logic
         self.sigRequestGeneratorInitValues.disconnect()
         self.sigSavePulseBlock.disconnect()
@@ -354,6 +358,7 @@ class PulsedMasterLogic(GenericLogic):
         self._measurement_logic.sigAnalysisMethodsUpdated.disconnect()
         self._measurement_logic.sigExtractionSettingsUpdated.disconnect()
         self._measurement_logic.sigExtractionMethodsUpdated.disconnect()
+        self._measurement_logic.sigEnsembleSettingsUpdate.disconnect()
         # Signals coming from the sequence_generator_logic
         self._generator_logic.sigBlockDictUpdated.disconnect()
         self._generator_logic.sigEnsembleDictUpdated.disconnect()
@@ -547,6 +552,17 @@ class PulsedMasterLogic(GenericLogic):
         @return:
         """
         self.sigAnalysisMethodsUpdated.emit(methods_dict)
+        return
+
+
+    def ensemble_settings_update(self, ensemble_name):
+        """
+        This functions gets the ensemble settings and passes them to the measurement logic
+
+        @return:
+        """
+        ensemble_settings = self._generator_logic.saved_pulse_block_ensembles[ensemble_name]
+        self.sigEnsembleSettingsUpdated.emit(ensemble_settings)
         return
 
     def do_fit(self, fit_function):
@@ -779,7 +795,7 @@ class PulsedMasterLogic(GenericLogic):
         # invoke measurement parameters from asset object
         if self.invoke_settings:
             # get asset object
-            if asset_name in self._generator_logic.saved_pulse_sequences:
+            if asset_name in self._generator_logic.saved_pulse_sequen_ces:
                 self.log.debug('Invoking measurement settings from PulseSequence object.')
                 asset_obj = self._generator_logic.saved_pulse_sequences[asset_name]
             elif asset_name in self._generator_logic.saved_pulse_block_ensembles:
@@ -1122,6 +1138,7 @@ class PulsedMasterLogic(GenericLogic):
         if self.status_dict['saup_ensemble_busy'] or self.status_dict['sauplo_ensemble_busy']:
             self.status_dict['sampling_busy'] = False
         return
+
 
     def sample_sequence_finished(self, sequence_name, sequence_params):
         """

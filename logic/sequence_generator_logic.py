@@ -684,14 +684,20 @@ class SequenceGeneratorLogic(GenericLogic, SamplingFunctions, SamplesWriteMethod
                                                               transition positions
                                                               (in timebins; incl. repetitions)
                                                               for each digital channel.
+                digital_falling_bins (2D numpy.ndarray[int]): Array of chronological high-to-low
+                                                              transition positions
+                                                              (in timebins; incl. repetitions)
+                                                              for each digital channel.
         """
         # variables to keep track of the current timeframe
         current_end_time = 0.0
         current_start_bin = 0
         # lists containing the bins where the digital channels are rising (one for each channel)
         digital_rising_bins = []
+        digital_falling_bins = []
         for i in range(ensemble.digital_channels):
             digital_rising_bins.append([])
+            digital_falling_bins.append([])
         # memorize the channel state of the previous element
         tmp_digital_high = [False] * ensemble.digital_channels
         # number of elements including repetitions and the length of each element in bins
@@ -717,6 +723,8 @@ class SequenceGeneratorLogic(GenericLogic, SamplingFunctions, SamplesWriteMethod
                         for chnl, is_high in enumerate(block_element.digital_high):
                             if not tmp_digital_high[chnl] and is_high:
                                 digital_rising_bins[chnl].append(current_start_bin)
+                            if tmp_digital_high[chnl] and not is_high:
+                                digital_falling_bins[chnl].append(current_start_bin)
                             tmp_digital_high[chnl] = is_high
 
                     # Get length and increment for this element
@@ -746,7 +754,11 @@ class SequenceGeneratorLogic(GenericLogic, SamplingFunctions, SamplesWriteMethod
         for chnl in range(len(digital_rising_bins)):
             digital_rising_bins[chnl] = np.array(digital_rising_bins[chnl], dtype=int)
 
-        return number_of_samples, total_elements, elements_length_bins, digital_rising_bins
+        # convert digital falling indices to numpy.ndarrays
+        for chnl in range(len(digital_falling_bins)):
+            digital_falling_bins[chnl] = np.array(digital_falling_bins[chnl], dtype=int)
+
+        return number_of_samples, total_elements, elements_length_bins, digital_rising_bins, digital_falling_bins
 
     def sample_pulse_block_ensemble(self, ensemble_name, write_to_file=True, offset_bin=0,
                                     name_tag=None):
@@ -801,6 +813,7 @@ class SequenceGeneratorLogic(GenericLogic, SamplingFunctions, SamplesWriteMethod
         <ensemble>.length_elements_bins
         <ensemble>.number_of_elements
         <ensemble>.digital_rising_bins
+        <ensemble>.digital_falling_bins
         <ensemble>.sample_rate
         <ensemble>.activation_config
         <ensemble>.amplitude_dict
@@ -860,11 +873,13 @@ class SequenceGeneratorLogic(GenericLogic, SamplingFunctions, SamplesWriteMethod
             return np.array([]), np.array([]), -1
 
         # get important parameters from the ensemble and save some to the ensemble object
-        number_of_samples, number_of_elements, length_elements_bins, digital_rising_bins = self._analyze_block_ensemble(ensemble)
+        number_of_samples, number_of_elements, length_elements_bins, digital_rising_bins, digital_falling_bins \
+            = self._analyze_block_ensemble(ensemble)
         ensemble.length_bins = number_of_samples
         ensemble.length_elements_bins = length_elements_bins
         ensemble.number_of_elements = number_of_elements
         ensemble.digital_rising_bins = digital_rising_bins
+        ensemble.digital_falling_bins = digital_falling_bins
         ensemble.sample_rate = self.sample_rate
         ensemble.activation_config = self.activation_config
         ensemble.amplitude_dict = self.amplitude_dict

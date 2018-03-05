@@ -281,6 +281,51 @@ def ungated_threshold(self, count_data):
     return return_dict
 
 
+
+def ungated_convert_to_gated(self, count_data):
+    """
+        Extracts the laser pulses in the ungated timetrace data using laser_start_indices and laser_length
+
+        @param numpy.ndarray count_data:    1D array the raw timetrace data from an ungated fast counter
+
+        @return 2D numpy.ndarray:   2D array, the extracted laser pulses of the timetrace.
+                                    dimensions: 0: laser number, 1: time bin
+
+        Procedure:
+            Threshold detection:
+            ---------------
+
+            Finds the laser pulses from the ungated timetrace using that their positions are known. The laser pulses are
+            the extracted using gated_conv_deriv.
+        """
+
+    # convert to fast counter bins
+    laser_start_fc_bins = np.array((self.ensemble_settings['laser_start_indices_bins'] / self.ensemble_settings['sample_rate']
+                              / self.fast_counter_binwidth),dtype=int)
+    laser_end_fc_bins = np.array((self.ensemble_settings['laser_end_indices_bins'] / self.ensemble_settings['sample_rate']
+                              / self.fast_counter_binwidth),dtype=int)
+    laser_length = laser_end_fc_bins - laser_start_fc_bins
+    self.log.debug(laser_length)
+
+    aom_safety = int(self.setup_settings['aom_uncertainty'] / self.fast_counter_binwidth)
+    aom_delay = int(self.setup_settings['aom_delay'] / self.fast_counter_binwidth)
+
+
+    #dimensions of laser pulse array
+    num_rows = len(laser_start_fc_bins)
+    num_col = max(laser_length) + 2 * aom_safety
+
+    # compute from laser_start_indices and laser length the respective position of the laser pulses
+    laser_pulses = np.empty((num_rows,num_col))
+    for ii in range(num_rows):
+        laser_pulses[ii][:] = count_data[np.arange(laser_start_fc_bins[ii] + aom_delay - aom_safety,
+                                                    laser_start_fc_bins[ii] + aom_delay + aom_safety + laser_length[ii])]
+
+    return_dict = self.gated_conv_deriv(laser_pulses)
+
+    return return_dict
+
+
 def _convolve_derive(self, data, std_dev):
     """ Smooth the input data by applying a gaussian filter.
 

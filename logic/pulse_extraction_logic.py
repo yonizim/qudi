@@ -43,6 +43,14 @@ class PulseExtractionLogic(GenericLogic):
                                                                     'min_laser_length': 200e-9,
                                                                     'current_method': 'conv_deriv'})
 
+    ensemble_settings = StatusVar('ensemble_settings', default={'laser_start_indices_bins': [],
+                                                                'laser_end_indices_bins': [],
+                                                                'sample_rate': 10e9})
+    #TO FIX: Needs to be adjustable in the GUI
+    setup_settings = StatusVar('setup_settings', default={'aom_delay': 300e-9,
+                                                          'aom_uncertainty': 200e-9})
+
+
     def __init__(self, config, **kwargs):
         super().__init__(config=config, **kwargs)
 

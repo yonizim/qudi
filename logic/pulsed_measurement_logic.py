@@ -95,6 +95,7 @@ class PulsedMeasurementLogic(GenericLogic):
     sigAnalysisMethodsUpdated = QtCore.Signal(dict)
     sigExtractionSettingsUpdated = QtCore.Signal(dict)
     sigExtractionMethodsUpdated = QtCore.Signal(dict)
+    sigEnsembleSettingsUpdate = QtCore.Signal(str)
 
     def __init__(self, config, **kwargs):
         super().__init__(config=config, **kwargs)
@@ -692,6 +693,8 @@ class PulsedMeasurementLogic(GenericLogic):
                 else:
                     self.recalled_raw_data = None
 
+                self.sigEnsembleSettingsUpdate.emit(self._pulse_generator_device.get_loaded_asset())
+
                 # start microwave generator
                 if self.use_ext_microwave:
                     self.microwave_on_off(True)
@@ -951,6 +954,28 @@ class PulsedMeasurementLogic(GenericLogic):
                 self._pulse_extraction_logic.extraction_settings[parameter] = extraction_settings[parameter]
             self.sigExtractionSettingsUpdated.emit(extraction_settings)
         return extraction_settings
+
+
+    def ensemble_settings_updated(self, ensemble_settings):
+        """
+
+        @param dict extraction_settings:
+        @return:
+        """
+
+        laser_channel = int(ensemble_settings.laser_channel[-1])-1
+
+        self._pulse_extraction_logic.ensemble_settings['laser_start_indices_bins'] \
+            = ensemble_settings.digital_rising_bins[laser_channel]
+
+        self._pulse_extraction_logic.ensemble_settings['laser_end_indices_bins'] \
+            = ensemble_settings.digital_falling_bins[laser_channel]
+
+
+        self._pulse_extraction_logic.ensemble_settings['sample_rate'] = ensemble_settings.sample_rate
+
+        return
+
 
     def _initialize_plots(self):
         """
