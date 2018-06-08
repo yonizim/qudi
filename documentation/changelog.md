@@ -4,6 +4,7 @@
 
 Changes/New features:
 
+* Improved scientific SpinBox validators to allow for more intuitive keyboard input
 * All modules use new connector style where feasible.
 * Bug fix for waveform generation larger than ~2 GSamples
 * Bug fix for POI manager was losing active POI when moving crosshair in confocal
@@ -18,6 +19,7 @@ Changes/New features:
 * POI manager keeps POIs as StatusVar across restarts and fixes to distance measurement
 * Added a functionality to also externalize sampling functions
 * Various stability improvements and minor bug fixes
+* Update conda environment to more recent versions of packages
 
 Config changes:
 
