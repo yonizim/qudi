@@ -1047,7 +1047,7 @@ class SequenceGeneratorLogic(GenericLogic):
             digital_channels = block.digital_channels
             analog_channels = block.analog_channels
             channel_set = analog_channels.union(digital_channels)
-            if laser_channel in channel_set:
+            if laser_channel in digital_channels:
                 tmp_digital_high = block.element_list[-1].digital_high[laser_channel]
         else:
             return ensemble_length_s, ensemble_length_bins, number_of_lasers
@@ -1059,7 +1059,7 @@ class SequenceGeneratorLogic(GenericLogic):
             for rep_no in range(reps + 1):
                 # ideal end time for the sequence up until this point in sec
                 ensemble_length_s += block.init_length_s + rep_no * block.increment_s
-                if laser_channel in channel_set:
+                if laser_channel in digital_channels:
                     # Iterate over the Block_Elements inside the current block
                     for block_element in block.element_list:
                         # save bin position if transition from low to high has occured in laser channel
@@ -1648,9 +1648,9 @@ class SequenceGeneratorLogic(GenericLogic):
         if steps_written != len(sequence_param_dict_list):
             self.log.error('Writing PulseSequence "{0}" to the device memory failed.\n'
                            'Returned number of sequence steps ({1:d}) does not match desired '
-                           'number of steps ({2:d}).'.format(sequence.name,
-                                                             steps_written,
-                                                             len(sequence_param_dict_list)))
+                           'number of steps ({2:d}).'
+                           ''.format(sequence.name, steps_written, len(sequence_param_dict_list))
+                           )
 
         # get important parameters from the sequence and save them to the sequence object
         sequence.sampling_information.update(self.analyze_sequence(sequence))
