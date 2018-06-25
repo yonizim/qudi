@@ -157,13 +157,14 @@ class M3202A(Base, PulserInterface):
 
         @return int: error code (0:OK, -1:error)
         """
+        print('reset')
         activation_dict = self.get_active_channels()
         active_channels = {chnl for chnl in activation_dict if activation_dict[chnl]}
         for chan in active_channels:
             ch = self.__ch_map[chan]
-            self.awg.AWGstop(ch)
-            self.awg.AWGflush(ch)
-            self.awg.channelWaveShape(ch, ksd1.SD_Waveshapes.AOU_AWG)
+            print(self.awg.AWGstop(ch))
+            print(self.awg.AWGflush(ch))
+            print(self.awg.channelWaveShape(ch, ksd1.SD_Waveshapes.AOU_AWG))
 
         self.awg.waveformFlush()
 
@@ -255,6 +256,7 @@ class M3202A(Base, PulserInterface):
 
         @return int: error code (0:OK, -1:error)
         """
+        print('Clear all.')
         self.reset()
         return 0
 
@@ -280,7 +282,6 @@ class M3202A(Base, PulserInterface):
                 current_status += 1
         # All the other status messages should have higher integer values then 1.
         return current_status, status_dic
-
 
     def get_sample_rate(self):
         """ Get the sample rate of the pulse generator hardware
@@ -344,6 +345,7 @@ class M3202A(Base, PulserInterface):
             self.awg.channelOffset(self.__ch_map[ch], off)
             self.analog_offsets[ch] = off
 
+        print('analog amp:', self.analog_amplitudes, 'offs:', self.analog_offsets)
         return self.analog_amplitudes, self.analog_offsets
 
     def get_digital_level(self, low=None, high=None):
@@ -372,6 +374,7 @@ class M3202A(Base, PulserInterface):
                               the second dict the high value for ALL digital channels.
                               Keys are the channel descriptor strings (i.e. 'd_ch1', 'd_ch2')
         """
+        print('no digital levels set')
         return {}, {}
 
     def get_active_channels(self, ch=None):
@@ -420,7 +423,7 @@ class M3202A(Base, PulserInterface):
         @return: (int, list) number of samples written (-1 indicates failed process) and list of
                              created waveform names
         """
-        print(name, analog_samples, digital_samples, is_first_chunk, is_last_chunk, total_number_of_samples)
+        print('write wfm:', name, is_first_chunk, is_last_chunk, total_number_of_samples)
         waveforms = list()
         min_samples = 30
 
@@ -457,8 +460,8 @@ class M3202A(Base, PulserInterface):
             a_ch_num = self.__ch_map[a_ch]
             wfm_name = '{0}_ch{1:d}'.format(name, a_ch_num)
             wfm = ksd1.SD_Wave()
-            print(wfm)
-            print(analog_samples[a_ch])
+            print('wfmobj:', wfm)
+            print('wfmana:', analog_samples[a_ch])
             wfmid = wfm.newFromArrayDouble(ksd1.SD_WaveformTypes.WAVE_ANALOG, analog_samples[a_ch])
             if wfmid < 0:
                 self.log.error('Device error when creating waveform {} ch: {}: {} {}'
@@ -510,6 +513,10 @@ class M3202A(Base, PulserInterface):
         num_tracks = len(active_analog)
         num_steps = len(sequence_parameter_list)
 
+        for a_ch in active_analog:
+            self.awg.AWGflush(self.__ch_map[a_ch])
+            self.awg.channelWaveShape(self.__ch_map[a_ch], ksd1.SD_Waveshapes.AOU_AWG)
+
         # Fill in sequence information
         for step, (wfm_tuple, seq_params) in enumerate(sequence_parameter_list, 1):
             # Set waveforms to play
@@ -518,20 +525,36 @@ class M3202A(Base, PulserInterface):
                     # !!!
                     wfm_nr = self.written_waveforms[waveform]
                     if seq_params['wait_for'] != 'OFF':
+                        print('Trig EXT')
                         trig = ksd1.SD_TriggerModes.EXTTRIG
                     else:
+                        print('TrigAuto')
                         trig = ksd1.SD_TriggerModes.AUTOTRIG
                     cycles = seq_params['repetitions'] + 1
                     prescale = 0
                     delay = 0
                     ret = self.awg.AWGqueueWaveform(track, wfm_nr, trig, delay, cycles, prescale)
-                    print(track, wfm_nr, trig, delay, cycles, prescale, '->', ret)
+                    print('seqstep:', step, track, wfm_nr, trig, delay, cycles, prescale, '->', ret)
+                    if ret < 0:
+                        self.log.error('Error queueing wfm: {} {}'.format(ksd1.SD_Error.getErrorMessage(ret)))
+                        return steps_written
+
                     wfms_added[track] = '{0}_{1:d}'.format(name, track)
                 steps_written += 1
             else:
                 self.log.error('Unable to write sequence.\nLength of waveform tuple "{0}" does not '
                                'match the number of sequence tracks.'.format(waveform_tuple))
                 return -1
+
+        # more setup
+        for a_ch in active_analog:
+            print(self.awg.AWGqueueConfig(self.__ch_map[a_ch], 1))
+            print(self.awg.channelAmplitude(self.__ch_map[a_ch], 1.5))
+        err = self.awg.triggerIOconfig(ksd1.SD_TriggerDirections.AOU_TRG_OUT)
+        if err < 0:
+            print(err, ksd1.SD_Error.getErrorMessage(err))
+
+        print(self.awg.AWGqueueMarkerConfig(1, ksd1.SD_MarkerModes.START_AFTER_DELAY, 2, 1, 1, 0, 2, 0))
 
         if num_steps == steps_written:
             self.last_sequence = name
