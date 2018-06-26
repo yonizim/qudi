@@ -131,7 +131,7 @@ class M3202A(Base, PulserInterface):
         self._constraints = constraints
 
         self.awg = ksd1.SD_AOU()
-        aouID = self.awg.openWithSerialNumber('M3202A', self.serial)
+        aouID = self.awg.openWithSerialNumberCompatibility('M3202A', self.serial, ksd1.SD_Compatibility.KEYSIGHT)
         # Check AWG Connection for errors
         if aouID < 0:
             self.awg.close()
@@ -194,7 +194,8 @@ class M3202A(Base, PulserInterface):
 
         @return int: error code (0:OK, -1:error)
         """
-        self.awg.AWGstartMultiple(0b1111)
+        print('start')
+        print(self.awg.AWGstartMultiple(0b1111))
         return 0
 
     def pulser_off(self):
@@ -202,7 +203,8 @@ class M3202A(Base, PulserInterface):
 
         @return int: error code (0:OK, -1:error)
         """
-        self.awg.AWGstopMultiple(0b1111)
+        print('stop')
+        print(self.awg.AWGstopMultiple(0b1111))
         return 0
 
     def load_waveform(self, load_dict):
@@ -460,7 +462,7 @@ class M3202A(Base, PulserInterface):
             a_ch_num = self.__ch_map[a_ch]
             wfm_name = '{0}_ch{1:d}'.format(name, a_ch_num)
             wfm = ksd1.SD_Wave()
-            print('wfmobj:', wfm)
+            print('wfmobj:', a_ch, name, wfm_name, wfm)
             print('wfmana:', analog_samples[a_ch])
             wfmid = wfm.newFromArrayDouble(ksd1.SD_WaveformTypes.WAVE_ANALOG, analog_samples[a_ch])
             if wfmid < 0:
@@ -534,6 +536,7 @@ class M3202A(Base, PulserInterface):
                     prescale = 0
                     delay = 0
                     ret = self.awg.AWGqueueWaveform(track, wfm_nr, trig, delay, cycles, prescale)
+                    print(name, track, waveform, wfm_nr, type(wfm_tuple), wfm_tuple)
                     print('seqstep:', step, track, wfm_nr, trig, delay, cycles, prescale, '->', ret)
                     if ret < 0:
                         self.log.error('Error queueing wfm: {} {}'.format(ksd1.SD_Error.getErrorMessage(ret)))
