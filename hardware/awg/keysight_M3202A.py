@@ -553,11 +553,15 @@ class M3202A(Base, PulserInterface):
         for a_ch in active_analog:
             print(self.awg.AWGqueueConfig(self.__ch_map[a_ch], 1))
             print(self.awg.channelAmplitude(self.__ch_map[a_ch], 1.5))
+            print(self.awg.AWGqueueSyncMode(self.__ch_map[a_ch], ksd1.SD_SyncModes.SYNC_CLK10))
+
         err = self.awg.triggerIOconfig(ksd1.SD_TriggerDirections.AOU_TRG_OUT)
         if err < 0:
             print(err, ksd1.SD_Error.getErrorMessage(err))
 
-        print(self.awg.AWGqueueMarkerConfig(1, ksd1.SD_MarkerModes.START_AFTER_DELAY, 2, 1, 1, 0, 2, 0))
+        print(self.awg.AWGqueueMarkerConfig(1, ksd1.SD_MarkerModes.START_AFTER_DELAY, 0, 1, 1, 0, 20, 0))
+        print(self.awg.AWGqueueMarkerConfig(2, ksd1.SD_MarkerModes.START_AFTER_DELAY, 1, 0, 1, 1, 10, 0))
+        print(self.awg.AWGqueueMarkerConfig(3, ksd1.SD_MarkerModes.START_AFTER_DELAY, 2, 0, 1, 1, 10, 0))
 
         if num_steps == steps_written:
             self.last_sequence = name
