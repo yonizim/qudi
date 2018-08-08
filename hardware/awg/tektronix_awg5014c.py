@@ -18,8 +18,9 @@ along with Qudi. If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (c) the Qudi Developers. See the COPYRIGHT.txt file at the
 top-level directory of this distribution and at <https://github.com/Ulm-IQO/qudi/>
-""" 
+"""
 
+from core.util.modules import get_home_dir
 import time
 from ftplib import FTP
 from socket import socket, AF_INET, SOCK_STREAM
@@ -28,14 +29,24 @@ from collections import OrderedDict
 from fnmatch import fnmatch
 import re
 
-from core.base import Base
+from core.module import Base, ConfigOption
 from interface.pulser_interface import PulserInterface, PulserConstraints
+
 
 class AWG5014C(Base, PulserInterface):
     """ Unstable and in construction, Alex Stark    """
 
     _modclass = 'awg5014c'
     _modtype = 'hardware'
+
+    # config options
+    ip_address = ConfigOption('awg_IP_address', missing='error')
+    port = ConfigOption('awg_port', missing='error')
+    _timeout = ConfigOption('timeout', 10, missing='warn')
+    ftp_root_directory = ConfigOption('ftp_root_dir', 'C:\\inetpub\\ftproot', missing='warn')
+    user = ConfigOption('ftp_login', 'anonymous', missing='warn')
+    passwd = ConfigOption('ftp_passwd', 'anonymous@', missing='warn')
+
     def __init__(self, config, **kwargs):
         super().__init__(config=config, **kwargs)
 
@@ -47,31 +58,11 @@ class AWG5014C(Base, PulserInterface):
 
         self._marker_byte_dict = { 0:b'\x00',1:b'\x01', 2:b'\x02', 3:b'\x03'}
         self.current_loaded_asset = ''
+
     def on_activate(self):
         """ Initialisation performed during activation of the module.
         """
-
         config = self.getConfiguration()
-
-        if 'awg_IP_address' in config.keys():
-            self.ip_address = config['awg_IP_address']
-        else:
-            self.log.error('No IP address parameter "awg_IP_address" found '
-                    'in the config for the AWG5014C! Correct that!')
-
-        if 'awg_port' in config.keys():
-            self.port = config['awg_port']
-        else:
-            self.log.error('No port parameter "awg_port" found in the config '
-                           'for the AWG5014C! Correct that!')
-
-        if 'timeout' in config.keys():
-            self._timeout = config['timeout']
-        else:
-            self.log.error('No parameter "timeout" found in the config for '
-                         'the AWG5014C! Take a default value of 10s.')
-            self._timeout = 10
-
 
         # Use a socket connection via IPv4 connection and use a the most common
         # stream socket.
@@ -97,17 +88,6 @@ class AWG5014C(Base, PulserInterface):
                     'the config for the AWG5014C! The maximum sample rate is '
                     'used instead.')
             self._sample_rate = self.get_constraints().sample_rate.max
-
-        if 'ftp_root_dir' in config.keys():
-            self.ftp_root_directory = config['ftp_root_dir']
-        else:
-            self.ftp_root_directory = 'C:\\inetpub\\ftproot'
-            self.log.warning('No parameter "ftp_root_dir" was specified in the '
-                             'config for tektronix_AWG5014C as directory for '
-                             'the FTP server root on the AWG!\n'
-                             'The default root directory\n{0}\nwill be assumed '
-                             'instead.'.format(self.ftp_root_directory))
-
         # settings for remote access on the AWG PC
         self.asset_directory = '\\waves'
 
@@ -116,7 +96,7 @@ class AWG5014C(Base, PulserInterface):
 
             if not os.path.exists(self.pulsed_file_dir):
 
-                homedir = self.get_home_dir()
+                homedir = get_home_dir()
                 self.pulsed_file_dir = os.path.join(homedir, 'pulsed_files')
                 self.log.warning('The directory defined in parameter '
                     '"pulsed_file_dir" in the config for '
@@ -124,7 +104,7 @@ class AWG5014C(Base, PulserInterface):
                     'The default home directory\n{0}\n will be taken '
                     'instead.'.format(self.pulsed_file_dir))
         else:
-            homedir = self.get_home_dir()
+            homedir = get_home_dir()
             self.pulsed_file_dir = os.path.join(homedir, 'pulsed_files')
             self.log.warning('No parameter "pulsed_file_dir" was specified '
                     'in the config for SequenceGeneratorLogic as directory '
@@ -133,16 +113,10 @@ class AWG5014C(Base, PulserInterface):
                     'will be taken instead.'.format(self.pulsed_file_dir))
 
         self.host_waveform_directory = self._get_dir_for_name('sampled_hardware_files')
-
-        self.user = 'anonymous'
-        self.passwd = 'anonymous@'
-        if 'ftp_login' in config.keys() and 'ftp_passwd' in config.keys():
-            self.user = config['ftp_login']
-            self.passwd = config['ftp_passwd']
-
-
         self.awg_model = self._get_model_ID()[1]
         self.log.debug('Found the following model: {0}'.format(self.awg_model))
+
+
     def on_deactivate(self):
         """ Deinitialisation performed during deactivation of the module.
         """
@@ -150,6 +124,7 @@ class AWG5014C(Base, PulserInterface):
         self.soc.shutdown(0) # tell the connection that the host will not listen
                              # any more to messages from it.
         self.soc.close()
+
     # =========================================================================
     # Below all the Pulser Interface routines.
     # =========================================================================
@@ -265,6 +240,8 @@ class AWG5014C(Base, PulserInterface):
         constraints.activation_config = activation_config
 
         return constraints
+
+
     def pulser_on(self):
         """ Switches the pulsing device on.
 
@@ -276,6 +253,7 @@ class AWG5014C(Base, PulserInterface):
         self.tell('AWGC:RUN\n')
 
         return self.get_status()[0]
+
     def pulser_off(self):
         """ Switches the pulsing device off.
 
@@ -286,6 +264,7 @@ class AWG5014C(Base, PulserInterface):
         self.tell('AWGC:STOP\n')
 
         return self.get_status()[0]
+
     def upload_asset(self, asset_name=None):
         """ Upload an already hardware conform file to the device.
         Does NOT load into channels.
@@ -313,7 +292,6 @@ class AWG5014C(Base, PulserInterface):
 
             is_wfm = filename.endswith('.wfm')
 
-
             if is_wfm and (asset_name + '_ch') in filename:
                 upload_names.append(filename)
 
@@ -324,6 +302,7 @@ class AWG5014C(Base, PulserInterface):
         for name in upload_names:
             self._send_file(name)
         return 0
+
     def _send_file(self, filename):
         """ Sends an already hardware specific waveform file to the pulse
             generators waveform directory.
@@ -343,6 +322,7 @@ class AWG5014C(Base, PulserInterface):
             ftp.cwd(self.asset_directory)
             with open(filepath, 'rb') as uploaded_file:
                 ftp.storbinary('STOR '+filename, uploaded_file)
+
     def load_asset(self, asset_name, load_dict=None):
         """ Loads a sequence or waveform to the specified channel of the pulsing
             device.
@@ -422,6 +402,7 @@ class AWG5014C(Base, PulserInterface):
             self.current_loaded_asset = asset_name
 
         return 0
+
     def get_loaded_asset(self):
         """ Retrieve the currently loaded asset name of the device.
 
@@ -429,6 +410,7 @@ class AWG5014C(Base, PulserInterface):
                      a waveform, a sequence ect.
         """
         return self.current_loaded_asset
+
     def clear_all(self):
         """ Clears the loaded waveform from the pulse generators RAM.
 
@@ -442,6 +424,7 @@ class AWG5014C(Base, PulserInterface):
         self.tell('WLIST:WAVEFORM:DELETE ALL\n')
         self.current_loaded_asset = ''
         return
+
     def get_status(self):
         """ Retrieves the status of the pulsing hardware
 
@@ -481,6 +464,7 @@ class AWG5014C(Base, PulserInterface):
             return 2, status_dic
         else:
             return message, status_dic
+
     def get_sample_rate(self):
         """ Get the sample rate of the pulse generator hardware
 
@@ -492,6 +476,7 @@ class AWG5014C(Base, PulserInterface):
 
         self._sample_rate = float(self.ask('SOURCE1:FREQUENCY?'))
         return self._sample_rate
+
     def set_sample_rate(self, sample_rate):
         """ Set the sample rate of the pulse generator hardware.
 
@@ -507,6 +492,7 @@ class AWG5014C(Base, PulserInterface):
         self.tell('SOURCE1:FREQUENCY {0:.4G}MHz\n'.format(sample_rate/1e6))
         time.sleep(0.2)
         return self.get_sample_rate()
+
     def get_analog_level(self, amplitude=None, offset=None):
         """ Retrieve the analog amplitude and offset of the provided channels.
 
@@ -574,6 +560,8 @@ class AWG5014C(Base, PulserInterface):
                 off[a_ch] = float(self.ask('SOURCE{0}:VOLTAGE:OFFSET?'.format(ch_num)))
 
         return amp, off
+
+
     def set_analog_level(self, amplitude=None, offset=None):
         """ Set amplitude and/or offset value of the provided analog channel.
 
@@ -639,6 +627,7 @@ class AWG5014C(Base, PulserInterface):
                 self.tell('SOURCE{0}:VOLTAGE:OFFSET {1}'.format(ch_num, offset[a_ch]))
 
         return self.get_analog_level(amplitude=list(amplitude), offset=list(offset))
+
     def get_digital_level(self, low=None, high=None):
         """ Retrieve the digital low and high level of the provided channels.
 
@@ -715,6 +704,7 @@ class AWG5014C(Base, PulserInterface):
                         high_val[d_ch] = float(self.ask('SOURCE2:MARKER{0}:VOLTAGE:HIGH?'.format(int(d_ch-2))))
 
         return low_val, high_val
+
     def set_digital_level(self, low=None, high=None):
         """ Set low and/or high value of the provided digital channel.
 
@@ -788,6 +778,7 @@ class AWG5014C(Base, PulserInterface):
                     self.tell('SOURCE2:MARKER{0}:VOLTAGE:HIGH {1}'.format(ch_num-2, high[d_ch]))
 
         return self.get_digital_level(low=list(low), high=list(high))
+
     def get_active_channels(self, ch=None):
         """ Get the active channels of the pulse generator hardware.
 
@@ -817,6 +808,7 @@ class AWG5014C(Base, PulserInterface):
             active_ch['a_ch2'] = bool(int(self.ask('OUTPUT2:STATE?')))
             active_ch['a_ch3'] = bool(int(self.ask('OUTPUT3:STATE?')))
             active_ch['a_ch4'] = bool(int(self.ask('OUTPUT4:STATE?')))
+
 
             # For the AWG5000 series, the resolution of the DAC for the analog
             # channel is fixed to 14bit. Therefore the digital channels are
@@ -857,6 +849,7 @@ class AWG5014C(Base, PulserInterface):
                                     digi_chan,
                                     self._get_num_d_ch()))
         return active_ch
+
     def set_active_channels(self, ch=None):
         """ Set the active channels for the pulse generator hardware.
 
@@ -911,6 +904,7 @@ class AWG5014C(Base, PulserInterface):
         #                 'active. This configuration cannot be changed.')
 
         return self.get_active_channels(ch=list(ch))
+
     def get_uploaded_asset_names(self):
         """ Retrieve the names of all uploaded assets on the device.
 
@@ -930,6 +924,8 @@ class AWG5014C(Base, PulserInterface):
             if fnmatch(filename, '*.seq'):
                 name_list.append(filename[:-4])
         return name_list
+
+
     def get_saved_asset_names(self):
         """ Retrieve the names of all sampled and saved assets on the host PC.
         This is no list of the file names.
@@ -947,6 +943,8 @@ class AWG5014C(Base, PulserInterface):
                 if asset_name not in saved_assets:
                     saved_assets.append(asset_name)
         return saved_assets
+
+
     def delete_asset(self, asset_name):
         """ Delete all files associated with an asset with the passed
             asset_name from the device memory.
@@ -986,45 +984,8 @@ class AWG5014C(Base, PulserInterface):
         # if self.current_loaded_asset == asset_name:
         #     self.clear_all()
         return files_to_delete
-    def delete_asset(self, asset_name):
-        """ Delete all files associated with an asset with the passed
-            asset_name from the device memory.
 
-        @param str asset_name: The name of the asset to be deleted
-                               Optionally a list of asset names can be passed.
 
-        @return list: a list with strings of the files which were deleted.
-
-        Unused for digital pulse generators without sequence storage capability
-        (PulseBlaster, FPGA).
-        """
-        if not isinstance(asset_name, list):
-            asset_name = [asset_name]
-
-        # get all uploaded files
-        uploaded_files = self._get_filenames_on_device()
-
-        # list of uploaded files to be deleted
-        files_to_delete = []
-        # determine files to delete
-        for name in asset_name:
-            for filename in uploaded_files:
-                if fnmatch(filename, name+'_ch?.wfm'):
-                    files_to_delete.append(filename)
-                elif fnmatch(filename, name+'.seq'):
-                    files_to_delete.append(filename)
-
-        # delete files
-        with FTP(self.ip_address) as ftp:
-            ftp.login() # login as default user anonymous, passwd anonymous@
-            ftp.cwd(self.asset_directory)
-            for filename in files_to_delete:
-                ftp.delete(filename)
-
-        # clear the AWG if the deleted asset is the currently loaded asset
-        # if self.current_loaded_asset == asset_name:
-        #     self.clear_all()
-        return files_to_delete
     def set_asset_dir_on_device(self, dir_path):
         """ Change the directory where the assets are stored on the device.
 
@@ -1048,7 +1009,8 @@ class AWG5014C(Base, PulserInterface):
                 ftp.mkd(dir_path)
 
         self.asset_directory = dir_path
-        return
+        return 0
+
     def get_asset_dir_on_device(self):
         """ Ask for the directory where the assets are stored on the device.
 
@@ -1059,12 +1021,15 @@ class AWG5014C(Base, PulserInterface):
         """
 
         return self.asset_directory
+
+
     def has_sequence_mode(self):
         """ Asks the pulse generator whether sequence mode exists.
 
         @return: bool, True for yes, False for no.
         """
         return self.sequence_mode
+
     def get_interleave(self):
         """ Check whether Interleave is on in AWG.
         Unused for pulse generator hardware other than an AWG. The AWG 5000
@@ -1075,6 +1040,7 @@ class AWG5014C(Base, PulserInterface):
         """
 
         return False
+
     def set_interleave(self, state=False):
         """ Turns the interleave of an AWG on or off.
 
@@ -1094,6 +1060,7 @@ class AWG5014C(Base, PulserInterface):
                 'Series!\n'
                 'Method call will be ignored.')
         return self.get_interleave()
+
     def tell(self, command):
         """Send a command string to the AWG.
 
@@ -1112,6 +1079,7 @@ class AWG5014C(Base, PulserInterface):
         command = bytes(command, 'UTF-8')
         self.soc.send(command)
         return 0
+
     def ask(self, question):
         """ Asks the device a 'question' and receive an answer from it.
 
@@ -1142,6 +1110,7 @@ class AWG5014C(Base, PulserInterface):
         message = message.strip()
 
         return message
+
     def reset(self):
         """Reset the device.
 
@@ -1150,10 +1119,12 @@ class AWG5014C(Base, PulserInterface):
         self.tell('*RST\n')
 
         return 0
+
     # =========================================================================
     # Below all the low level routines which are needed for the communication
     # and establishment of a connection.
     # ========================================================================
+
     def _get_model_ID(self):
         """ Obtain the device identification.
 
@@ -1162,6 +1133,7 @@ class AWG5014C(Base, PulserInterface):
 
         model_id = self.ask('*IDN?').replace('\n', '').split(',')
         return model_id
+
     def set_lowpass_filter(self, a_ch, cutoff_freq):
         """ Set a lowpass filter to the analog channels ofawg    the AWG.
 
@@ -1172,6 +1144,7 @@ class AWG5014C(Base, PulserInterface):
             self.tell('OUTPUT1:FILTER:LPASS:FREQUENCY {0:f}MHz\n'.format(cutoff_freq/1e6) )
         elif a_ch ==2:
             self.tell('OUTPUT2:FILTER:LPASS:FREQUENCY {0:f}MHz\n'.format(cutoff_freq/1e6) )
+
     def set_jump_timing(self, synchronous = False):
         """Sets control of the jump timing in the AWG.
 
@@ -1188,6 +1161,7 @@ class AWG5014C(Base, PulserInterface):
             self.tell('EVEN:JTIM SYNC\n')
         else:
             self.tell('EVEN:JTIM ASYNC\n')
+
     def set_mode(self, mode):
         """Change the output mode of the AWG5000 series.
 
@@ -1206,6 +1180,8 @@ class AWG5014C(Base, PulserInterface):
                    'S' : 'SEQ'
                   }
         self.tell('AWGC:RMOD {0!s}\n'.format(look_up[mode.upper()]))
+
+
     def get_sequencer_mode(self,output_as_int=False):
         """ Asks the AWG which sequencer mode it is using.
 
@@ -1240,6 +1216,7 @@ class AWG5014C(Base, PulserInterface):
     # Below all the higher level routines are situated which use the
     # wrapped routines as a basis to perform the desired task.
     # =========================================================================
+
     def _get_dir_for_name(self, name):
         """ Get the path to the pulsed sub-directory 'name'.
 
@@ -1252,6 +1229,7 @@ class AWG5014C(Base, PulserInterface):
             os.makedirs(os.path.abspath(path))
 
         return os.path.abspath(path)
+
     def _get_filenames_on_device(self):
         """ Get the full filenames of all assets saved on the device.
 
@@ -1287,6 +1265,7 @@ class AWG5014C(Base, PulserInterface):
                         filename_list.append(filename)
 
         return filename_list
+
     def _get_filenames_on_host(self):
         """ Get the full filenames of all assets saved on the host PC.
 
@@ -1294,6 +1273,7 @@ class AWG5014C(Base, PulserInterface):
         """
         filename_list = [f for f in os.listdir(self.host_waveform_directory) if f.endswith('.wfm') or f.endswith('.seq')]
         return filename_list
+
     def _get_num_a_ch(self):
         """ Retrieve the number of available analog channels.
 
@@ -1314,6 +1294,7 @@ class AWG5014C(Base, PulserInterface):
 
         # count the number of entries in that array
         return len(all_a_ch)
+
     def _get_num_d_ch(self):
         """ Retrieve the number of available digital channels.
 
