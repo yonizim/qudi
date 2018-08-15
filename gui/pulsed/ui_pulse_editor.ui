@@ -841,6 +841,13 @@ Ensemble</string>
         </property>
        </widget>
       </item>
+      <item row="1" column="3">
+       <widget class="QPushButton" name="channels_on_ensemble_PushButton">
+        <property name="text">
+         <string>Channels ON</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>

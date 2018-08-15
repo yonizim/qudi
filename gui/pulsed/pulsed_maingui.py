@@ -1504,6 +1504,7 @@ class PulsedMeasurementGui(GUIBase):
 
         # connect button click signals
         self._pg.load_ensemble_PushButton.clicked.connect(self.load_ensemble_clicked)
+        self._pg.channels_on_ensemble_PushButton.clicked.connect(self.channels_on_ensemble_clicked)
         self._sg.load_sequence_PushButton.clicked.connect(self.load_sequence_clicked)
         self._mw.pulser_on_off_PushButton.clicked.connect(self.pulser_on_off_clicked)
         self._mw.clear_device_PushButton.clicked.connect(self.clear_pulser_clicked)
@@ -2566,6 +2567,14 @@ class PulsedMeasurementGui(GUIBase):
         asset_name = self._pg.gen_ensemble_ComboBox.currentText()
         # Load asset into channles via logic module
         self._pulsed_master_logic.load_asset_into_channels(asset_name, {})
+        return
+
+    def channels_on_ensemble_clicked(self):
+        """
+        This method is called when the user clecicks on  "Channels ON". It activates the chanells of the AWG.
+        """
+        # Load asset into channles via logic module
+        self._pulsed_master_logic.channels_on()
         return
 
     def load_sequence_clicked(self):

@@ -591,6 +591,15 @@ class PulsedMeasurementLogic(GenericLogic):
         self.sigLoadedAssetUpdated.emit(self.loaded_asset_name)
         return err
 
+    def channels_on(self):
+        """ 
+        @return 
+        """
+        channel_activation = self.get_active_channels()
+        for chnl in channel_activation:
+            channel_activation[chnl]=True
+        self._pulse_generator_device.set_active_channels(channel_activation)
+
     def direct_write_ensemble(self, ensemble_name, analog_samples, digital_samples):
         """
 

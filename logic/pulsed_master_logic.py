@@ -64,6 +64,7 @@ class PulsedMasterLogic(GenericLogic):
     sigDirectWriteEnsemble = QtCore.Signal(str, np.ndarray, np.ndarray)
     sigDirectWriteSequence = QtCore.Signal(str, list)
     sigLoadAsset = QtCore.Signal(str, dict)
+    sigChannelsOn = QtCore.Signal()
     sigClearPulseGenerator = QtCore.Signal()
     sigExtMicrowaveSettingsChanged = QtCore.Signal(float, float, bool)
     sigExtMicrowaveStartStop = QtCore.Signal(bool)
@@ -173,6 +174,7 @@ class PulsedMasterLogic(GenericLogic):
         self.sigUploadAsset.connect(self._measurement_logic.upload_asset,
                                     QtCore.Qt.QueuedConnection)
         self.sigLoadAsset.connect(self._measurement_logic.load_asset, QtCore.Qt.QueuedConnection)
+        self.sigChannelsOn.connect(self._measurement_logic.channels_on, QtCore.Qt.QueuedConnection)
         self.sigDirectWriteEnsemble.connect(self._measurement_logic.direct_write_ensemble,
                                             QtCore.Qt.QueuedConnection)
         self.sigDirectWriteSequence.connect(self._measurement_logic.direct_write_sequence,
@@ -314,6 +316,7 @@ class PulsedMasterLogic(GenericLogic):
         self.sigClearPulseGenerator.disconnect()
         self.sigUploadAsset.disconnect()
         self.sigLoadAsset.disconnect()
+        self.sigChannelsOn.disconnect()
         self.sigDirectWriteEnsemble.disconnect()
         self.sigDirectWriteSequence.disconnect()
         self.sigLaserToShowChanged.disconnect()
@@ -821,7 +824,12 @@ class PulsedMasterLogic(GenericLogic):
         self.status_dict['loading_busy'] = True
         self.sigLoadAsset.emit(asset_name, load_dict)
         return
-
+    def channels_on(self,):
+        """
+        @return:
+        """
+        self.sigChannelsOn.emit()
+        return
     def loaded_asset_updated(self, asset_name):
         """
 
