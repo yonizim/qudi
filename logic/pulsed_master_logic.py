@@ -57,6 +57,8 @@ class PulsedMasterLogic(GenericLogic):
     sigContinueMeasurement = QtCore.Signal()
     sigStartPulser = QtCore.Signal()
     sigStopPulser = QtCore.Signal()
+    sigPulserRunModeCont = QtCore.Signal()
+    sigPulserRunModeTrig = QtCore.Signal()
     sigFastCounterSettingsChanged = QtCore.Signal(float, float)
     sigMeasurementSequenceSettingsChanged = QtCore.Signal(np.ndarray, int, float, list, bool)
     sigPulseGeneratorSettingsChanged = QtCore.Signal(float, str, dict, bool)
@@ -169,6 +171,10 @@ class PulsedMasterLogic(GenericLogic):
                                     QtCore.Qt.QueuedConnection)
         self.sigStopPulser.connect(self._measurement_logic.pulse_generator_off,
                                    QtCore.Qt.QueuedConnection)
+        self.sigPulserRunModeCont.connect(self._measurement_logic.pulser_run_mode_cont,
+                                          QtCore.Qt.QueuedConnection)
+        self.sigPulserRunModeTrig.connect(self._measurement_logic.pulser_run_mode_trig,
+                                          QtCore.Qt.QueuedConnection)
         self.sigClearPulseGenerator.connect(self._measurement_logic.clear_pulser,
                                             QtCore.Qt.QueuedConnection)
         self.sigUploadAsset.connect(self._measurement_logic.upload_asset,
@@ -313,6 +319,8 @@ class PulsedMasterLogic(GenericLogic):
         self.sigContinueMeasurement.disconnect()
         self.sigStartPulser.disconnect()
         self.sigStopPulser.disconnect()
+        self.sigPulserRunModeCont.disconnect()
+        self.sigPulserRunModeTrig.disconnect()
         self.sigClearPulseGenerator.disconnect()
         self.sigUploadAsset.disconnect()
         self.sigLoadAsset.disconnect()
@@ -668,6 +676,18 @@ class PulsedMasterLogic(GenericLogic):
             self.sigStopPulser.emit()
         return
 
+    def switch_pulser_run_mode(self, run_mode):
+        """
+
+        @param switch_on:
+        @return:
+        """
+        if run_mode == 'T':
+            self.sigPulserRunModeCont.emit()
+        else:
+            self.sigPulserRunModeTrig.emit()
+        return
+
     def pulser_running_updated(self, is_running):
         """
 
@@ -824,12 +844,14 @@ class PulsedMasterLogic(GenericLogic):
         self.status_dict['loading_busy'] = True
         self.sigLoadAsset.emit(asset_name, load_dict)
         return
+
     def channels_on(self,):
         """
         @return:
         """
         self.sigChannelsOn.emit()
         return
+
     def loaded_asset_updated(self, asset_name):
         """
 

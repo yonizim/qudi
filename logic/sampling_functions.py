@@ -63,7 +63,7 @@ class SamplingFunctions():
         # <general_parameter> = {}
         freq_def = {'unit': 'Hz', 'init_val': 0.0, 'min': 0.0, 'max': np.inf,
                     'view_stepsize': 1.0, 'dec': 15, 'type': float}
-        ampl_def = {'unit': 'V', 'init_val': 0.0, 'min': 0.0, 'max': 1.0,
+        ampl_def = {'unit': 'V', 'init_val': 0.0, 'min': -4.5, 'max': 4.5,
                     'view_stepsize': 0.01, 'dec': 15, 'type': float}
         phase_def = {'unit': '°', 'init_val': 0.0, 'min': -360, 'max': 360,
                      'view_stepsize': 0.1, 'dec': 15, 'type': float}

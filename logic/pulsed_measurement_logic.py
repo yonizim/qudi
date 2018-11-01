@@ -122,7 +122,7 @@ class PulsedMeasurementLogic(GenericLogic):
 
         # Pulse generator parameters
         self.current_channel_config_name = ''
-        self.sample_rate = 25e9
+        self.sample_rate = 1.2e9
         self.analogue_amplitude = dict()
         self.interleave_on = False
 
@@ -599,6 +599,18 @@ class PulsedMeasurementLogic(GenericLogic):
         for chnl in channel_activation:
             channel_activation[chnl]=True
         self._pulse_generator_device.set_active_channels(channel_activation)
+
+    def pulser_run_mode_cont(self):
+        """Change the output mode of the pulser to continuous
+        """
+        err = self._pulse_generator_device.set_mode('C')
+        return err
+
+    def pulser_run_mode_trig(self):
+        """Change the output mode of the pulser to triggered
+        """
+        err = self._pulse_generator_device.set_mode('T')
+        return err
 
     def direct_write_ensemble(self, ensemble_name, analog_samples, digital_samples):
         """

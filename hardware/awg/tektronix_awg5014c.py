@@ -32,7 +32,6 @@ import re
 from core.module import Base, ConfigOption
 from interface.pulser_interface import PulserInterface, PulserConstraints
 
-
 class AWG5014C(Base, PulserInterface):
     """ Unstable and in construction, Alex Stark    """
 
@@ -62,6 +61,7 @@ class AWG5014C(Base, PulserInterface):
     def on_activate(self):
         """ Initialisation performed during activation of the module.
         """
+
         config = self.getConfiguration()
 
         # Use a socket connection via IPv4 connection and use a the most common
@@ -116,7 +116,6 @@ class AWG5014C(Base, PulserInterface):
         self.awg_model = self._get_model_ID()[1]
         self.log.debug('Found the following model: {0}'.format(self.awg_model))
 
-
     def on_deactivate(self):
         """ Deinitialisation performed during deactivation of the module.
         """
@@ -168,7 +167,7 @@ class AWG5014C(Base, PulserInterface):
         constraints.sample_rate.step = 1.0e6
         constraints.sample_rate.default = 600.0e6
 
-        constraints.a_ch_amplitude.min = 0.02
+        constraints.a_ch_amplitude.min = -4.5
         constraints.a_ch_amplitude.max = 4.5
         constraints.a_ch_amplitude.step = 0.001
         constraints.a_ch_amplitude.default = 4.5
@@ -240,7 +239,6 @@ class AWG5014C(Base, PulserInterface):
         constraints.activation_config = activation_config
 
         return constraints
-
 
     def pulser_on(self):
         """ Switches the pulsing device on.
@@ -561,7 +559,6 @@ class AWG5014C(Base, PulserInterface):
 
         return amp, off
 
-
     def set_analog_level(self, amplitude=None, offset=None):
         """ Set amplitude and/or offset value of the provided analog channel.
 
@@ -809,7 +806,6 @@ class AWG5014C(Base, PulserInterface):
             active_ch['a_ch3'] = bool(int(self.ask('OUTPUT3:STATE?')))
             active_ch['a_ch4'] = bool(int(self.ask('OUTPUT4:STATE?')))
 
-
             # For the AWG5000 series, the resolution of the DAC for the analog
             # channel is fixed to 14bit. Therefore the digital channels are
             # always active and cannot be deactivated. For other AWG devices the
@@ -925,7 +921,6 @@ class AWG5014C(Base, PulserInterface):
                 name_list.append(filename[:-4])
         return name_list
 
-
     def get_saved_asset_names(self):
         """ Retrieve the names of all sampled and saved assets on the host PC.
         This is no list of the file names.
@@ -943,7 +938,6 @@ class AWG5014C(Base, PulserInterface):
                 if asset_name not in saved_assets:
                     saved_assets.append(asset_name)
         return saved_assets
-
 
     def delete_asset(self, asset_name):
         """ Delete all files associated with an asset with the passed
@@ -985,7 +979,6 @@ class AWG5014C(Base, PulserInterface):
         #     self.clear_all()
         return files_to_delete
 
-
     def set_asset_dir_on_device(self, dir_path):
         """ Change the directory where the assets are stored on the device.
 
@@ -1021,7 +1014,6 @@ class AWG5014C(Base, PulserInterface):
         """
 
         return self.asset_directory
-
 
     def has_sequence_mode(self):
         """ Asks the pulse generator whether sequence mode exists.
@@ -1124,7 +1116,6 @@ class AWG5014C(Base, PulserInterface):
     # Below all the low level routines which are needed for the communication
     # and establishment of a connection.
     # ========================================================================
-
     def _get_model_ID(self):
         """ Obtain the device identification.
 
@@ -1180,7 +1171,6 @@ class AWG5014C(Base, PulserInterface):
                    'S' : 'SEQ'
                   }
         self.tell('AWGC:RMOD {0!s}\n'.format(look_up[mode.upper()]))
-
 
     def get_sequencer_mode(self,output_as_int=False):
         """ Asks the AWG which sequencer mode it is using.

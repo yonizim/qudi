@@ -1339,6 +1339,12 @@ class PulsedMeasurementGui(GUIBase):
         self._mw.pulser_on_off_PushButton.setCheckable(True)
         self._mw.control_ToolBar.addWidget(self._mw.pulser_on_off_PushButton)
 
+        self._mw.pulser_run_mode_cont_trig_PushButton = QtWidgets.QPushButton()
+        self._mw.pulser_run_mode_cont_trig_PushButton.setText('Pulser Mode TRIG')
+        self._mw.pulser_run_mode_cont_trig_PushButton.setToolTip('Switch the device run mode between cont and trig.')
+        self._mw.pulser_run_mode_cont_trig_PushButton.setCheckable(True)
+        self._mw.control_ToolBar.addWidget(self._mw.pulser_run_mode_cont_trig_PushButton)
+
         self._mw.clear_device_PushButton = QtWidgets.QPushButton(self._mw)
         self._mw.clear_device_PushButton.setText('Clear Pulser')
         self._mw.clear_device_PushButton.setToolTip(
@@ -1507,6 +1513,7 @@ class PulsedMeasurementGui(GUIBase):
         self._pg.channels_on_ensemble_PushButton.clicked.connect(self.channels_on_ensemble_clicked)
         self._sg.load_sequence_PushButton.clicked.connect(self.load_sequence_clicked)
         self._mw.pulser_on_off_PushButton.clicked.connect(self.pulser_on_off_clicked)
+        self._mw.pulser_run_mode_cont_trig_PushButton.clicked.connect(self.pulser_run_mode_cont_trig_clicked)
         self._mw.clear_device_PushButton.clicked.connect(self.clear_pulser_clicked)
         self._pa.fit_param_PushButton.clicked.connect(self.fit_clicked)
 
@@ -2336,7 +2343,6 @@ class PulsedMeasurementGui(GUIBase):
 
         return
 
-
     def extraction_methods_updated(self, methods_dict):
         """
 
@@ -2542,6 +2548,17 @@ class PulsedMeasurementGui(GUIBase):
                 self._mw.pulser_on_off_PushButton.toggle()
         # unblock signals
         self._mw.pulser_on_off_PushButton.blockSignals(False)
+        return
+
+    def pulser_run_mode_cont_trig_clicked(self, checked):
+        """ Manually switch the pulser run mode between cont and trig. """
+        is_trig = self._mw.pulser_run_mode_cont_trig_PushButton.isChecked()
+        if is_trig:
+            self._mw.pulser_run_mode_cont_trig_PushButton.setText('Pulser Mode TRIG')
+            self._pulsed_master_logic.switch_pulser_run_mode('T')
+        else:
+            self._mw.pulser_run_mode_cont_trig_PushButton.setText('Pulser Mode CONT')
+            self._pulsed_master_logic.switch_pulser_run_mode('C')
         return
 
     def clear_pulser_clicked(self):
